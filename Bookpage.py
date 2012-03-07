@@ -1,8 +1,12 @@
+#Very basic socket webpage program.Displays on localhost:2600
+
+
+
 import sys
 import socket
 import bookdb
 
-# let's pretend we're getting this information from a database somewhere
+
 
 
 database = ['CherryPy Essentials: Rapid Python Web Application Development',
