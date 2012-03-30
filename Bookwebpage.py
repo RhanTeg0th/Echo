@@ -1,4 +1,4 @@
-import os, socket, sys, cgi, bookdb, Login , urllib , urlparse
+import os, socket, sys, cgi, bookdb, urllib , urlparse
 
 import cgitb
 cgitb.enable(display=0, logdir="/tmp")
@@ -330,7 +330,6 @@ def send_response(content):
 if __name__ == '__main__':
 
     
-    L = Login.Login()
     args, nargs = sys.argv[1:], len(sys.argv) - 1
     host, port = (args + defaults[-2 + nargs:])[0:2]
     server = server_socket(host,port)
