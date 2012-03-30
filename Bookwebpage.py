@@ -1,8 +1,20 @@
-import os, socket, sys, bookdb
+import os, socket, sys, cgi, bookdb, Login , urllib , urlparse
+
+import cgitb
+cgitb.enable(display=0, logdir="/tmp")
 
 
-defaults = ['',2600]
+defaults = ['localhost',2600]
 
+size = 1024
+
+
+U = "WebBookDBadmin"
+
+P = "r1ng0st4rr"
+
+
+PATH = 'http://localhost:2600/'
 
 
 
@@ -39,7 +51,50 @@ Content-type: text/plain
 %s not found
 """
 
+
+
+
 INDEX = """
+
+<html>
+
+<head>
+
+    <title>Index Page</title>
+                
+
+<head>
+
+<body>
+
+<h1>Bookdb admin login: </h1>
+
+
+
+<form action="/tmp" method="get">
+
+Username: <input type="text" name="user" /> </br> 
+
+Password: <input type="text" name="pswd" />
+
+<input type="submit" value="Submit"/>
+
+
+
+</form>
+
+
+
+
+
+</body>
+
+</html>
+
+"""
+
+
+REINDEX = """
 
 <html>
 
@@ -49,20 +104,36 @@ INDEX = """
 
     <script type="text/javascript">
 
-     function redirect()
-     
+     function loginerror()
+    
       {
-        location.replace("http://localhost:2600/books.html");
-      }	
+         alert("Login info incorrect! Please resubmit.");
+      }
+      
     </script>
+
+ 
+<head>
+
+<body onload="loginerror()">
+
+<h1>Bookdb admin login: </h1>
+
+<form action="/tmp" method="get">
+
+Username: <input type="text" name="user" /> </br> 
+
+Password: <input type="text" name="pswd" />
 
     
 
-<head>
+<input type="submit" value="Submit" />
 
-<body>
 
-<button onclick="redirect()">Click here to goto the book database listings</button>
+
+</form>
+
+
 
 
 </body>
@@ -70,6 +141,39 @@ INDEX = """
 </html>
 
 """
+
+
+
+REDIRECT = """
+
+<html>
+
+<head>
+
+    <title>Index Page</title>
+    
+    <script type="text/javascript">
+
+     function redirect()
+     
+      {
+        location.replace("http://localhost:2600/");
+      }	
+    </script>
+
+    
+</head>
+
+<body onload="redirect()">
+</body>
+
+</html>
+
+
+"""
+
+
+
 
 database = ['CherryPy Essentials: Rapid Python Web Application Development',
              'Python for Software Design: How to Think Like a Computer Scientist',
@@ -89,8 +193,9 @@ linklist = ["http://www.amazon.com/CherryPy-Essentials-Application-Development-a
 
 LISTLINE1 = '<p style="color:blue"><a href='
 
-
 LISTLINE2 = '</a></p>'
+
+
 
 BOOK_LISTING1 = """
 
@@ -101,6 +206,7 @@ BOOK_LISTING1 = """
 
     <title>Bookpage</title>
 
+    
 </head>
 
 <body>
@@ -122,77 +228,118 @@ BOOK_LISTING2 = """
 B = bookdb.BookDB(database,linklist)
 
 
+
 def server_socket(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind((host, port))
-    s.listen(1)
+    s.listen(3)
     return s
 
 def listen(s):
     connection, client = s.accept()
     return connection.makefile('r+')
+  
+   
 
-def get_request(stream):
-    method = None
-    while True:
-        line = stream.readline()
-        print line
-        if not line.strip(): 
-            break
-        elif not method: 
-            method, uri, protocol = line.split()
-    return uri
+def get_bookpage(bookdb):
+         LISTLINES = []
+         page = BOOK_LISTING1
+         T = bookdb.titles()
+         L = bookdb.links()
+         i = 0
+         while i < 5:
+             entry = LISTLINE1 + L[i] + '>' + T[i] + LISTLINE2
+             LISTLINES.append(entry)
+             i = i + 1
+         for k in range(len(LISTLINES)):
+             page = page + LISTLINES[k]
+
+         Page = page + BOOK_LISTING2
+         return Page
+
+def get_mime(url):
+         return mime_types.get(os.path.splitext(url)[1], 'text/plain')
 
 
-def get_page(bookdb):
-    LISTLINES = []
-    page = BOOK_LISTING1
-    T = bookdb.titles()
-    L = bookdb.links()
-    i = 0
-    while i < 5:
-        entry = LISTLINE1 + L[i] + '>' + T[i] + LISTLINE2
-        LISTLINES.append(entry)
-        i = i + 1
-    for k in range(len(LISTLINES)):
-        page = page + LISTLINES[k]
+def get_content(stream):
 
-    Page = page + BOOK_LISTING2
-    return Page
+    loggedin = False
 
-def get_content(uri):
-    print 'fetching:', uri
+    Indxstr = ''
+    loginstr = 'user=WebBookDBadmin&pswd=r1ng0st4rr HTTP/1.1'
+    bookstr = '/books.html'
+    
+
+    line = stream.readline().strip()    
+    url = urlparse.urlparse(line)
+    
+    print url
+    
+    print "fetching", url.query       
+              
     try:
-                
-        if uri.endswith('books.html'):
-            return (200, get_mime(uri), get_page(B))
-        
-        if(uri.endswith('/')):
-            return (200, 'text/html', INDEX)
+
+                   
+        if(url.query==Indxstr):
             
-        else: return (404, uri)              
+            
+             return (200, 'text/html', INDEX)        
+
+        if(url.query!=Indxstr):
+            
+
+            if(url.query==loginstr):
+                    
+                    loggedin = True                
+                   
+                    return (200, get_mime('/books.html'),get_bookpage(B))
+                
+
+            if(url.query!=loginstr):
+                
+
+                   return (200,'text/html', REINDEX)
+            
+
+                   
+
+        if(url.query==bookstr and loggedin==False):
+
+
+               return (200,'text/html', REDIRECT)
+            
+
+        
+                               
+        
+        else:
+
+              return (404, url)              
             
     
     except IOError, e:
         return (404, e)
 
-def get_mime(uri):
-    return mime_types.get(os.path.splitext(uri)[1], 'text/plain')
 
-def send_response(stream, content):
+
+def send_response(content):
     stream.write(response[content[0]] % content[1:])
+    
 
 if __name__ == '__main__':
+
     
+    L = Login.Login()
     args, nargs = sys.argv[1:], len(sys.argv) - 1
     host, port = (args + defaults[-2 + nargs:])[0:2]
     server = server_socket(host,port)
     print 'starting %s on %s...' % (host, port)
+    
     try:
         while True:
             stream = listen (server)
-            send_response(stream, get_content(get_request(stream)) )
+            send_response(get_content(stream))
             stream.close()
     except KeyboardInterrupt:
         print 'shutting down...'
