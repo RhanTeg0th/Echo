@@ -13,8 +13,8 @@ Repeat sending messages until user enters empty string
 import socket 
 import sys
 
-host = 'localhost' 
-port = 5000 # different default port than echo, both can run on same server
+host = 'www.wrongplanet.net' 
+port = 80 # different default port than echo, both can run on same server
 size = 1024 
 
 nargs = len(sys.argv)

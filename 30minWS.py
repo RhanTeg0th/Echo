@@ -17,9 +17,9 @@
 #  to allow connection from other hosts besides localhost
 #
 
-import os, socket, sys, datetime
+import os, socket, sys, datetime, bookdb
 
-defaults = ['', '8080']  # '127.0.0.1' here limits connections to localhost
+defaults = ['', 8080]  # '127.0.0.1' here limits connections to localhost
 mime_types = {'.jpg' : 'image/jpg', 
              '.gif' : 'image/gif', 
              '.png' : 'image/png',
@@ -64,9 +64,57 @@ DIRECTORY_LISTING =\
 
 DIRECTORY_LINE = '<a href="%s">%s</a><br>'
 
+database = ['CherryPy Essentials: Rapid Python Web Application Development',
+             'Python for Software Design: How to Think Like a Computer Scientist',
+             'Foundations of Python Network Programming',
+             'Python Cookbook, Second Edition',
+             'The Pragmatic Programmer: From Journeyman to Master'
+            ]
+
+
+linklist = ["http://www.amazon.com/CherryPy-Essentials-Application-Development-applications/dp/1904811841/ref=sr_1_1?ie=UTF8&qid=1331064225&sr=8-1",
+             "http://www.amazon.com/Python-Software-Design-Computer-Scientist/dp/0521725968/ref=sr_1_1?s=books&ie=UTF8&qid=1331064398&sr=1-1",
+             "http://www.amazon.com/Foundations-Python-Network-Programming-comprehensive/dp/1430230037/ref=sr_1_1?s=books&ie=UTF8&qid=1331066930&sr=1-1",
+             "http://www.amazon.com/Python-Cookbook-Alex-Martelli/dp/0596007973/ref=sr_1_2?s=books&ie=UTF8&qid=1331067146&sr=1-2",
+             "http://www.amazon.com/Pragmatic-Programmer-Journeyman-Master/dp/020161622X/ref=sr_1_1?s=books&ie=UTF8&qid=1331067260&sr=1-1"
+             ]
+
+
+LISTLINE1 = '<p style="color:blue"><a href='
+
+
+LISTLINE2 = '</a></p>'
+
+BOOK_LISTING1 = """
+
+<html>
+
+<head>
+
+    <title>Bookpage</title>
+
+</head>
+
+<body>
+
+<h1>Book Listings:</h1>
+
+"""
+
+BOOK_LISTING2 = """
+
+</body>
+
+</html>
+
+"""
+
+
+
 def server_socket(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((host, port))
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind((host,port))
     s.listen(1)
     return s
 
@@ -98,14 +146,32 @@ def get_file(path):
     finally: 
         f.close()
 
+def get_page(bookdb):
+    LISTLINES = []
+    page = BOOK_LISTING1
+    T = bookdb.titles()
+    L = bookdb.links()
+    i = 0
+    while i < 5:
+        entry = LISTLINE1 + L[i] + '>' + T[i] + LISTLINE2
+        LISTLINES.append(entry)
+        i = i + 1
+    for k in range(len(LISTLINES)):
+        page = page + LISTLINES[k]
+
+    Page = page + BOOK_LISTING2
+    return Page
 
 
-def get_content(uri):
+
+def get_content(uri,bookdb):
     print 'fetching:', uri
     try:
         path = '.' + uri
         if(uri.endswith('/date.html')):
-            return (200, '/date.html', datetime.datetime.now())         
+            return (200, '/date.html', datetime.datetime.now())
+        if(uri.endswith('/books.html')):
+            return (200, '/books.html', get_page(bookdb))
         if os.path.isfile(path):
             return (200, get_mime(uri), get_file(path))
         if os.path.isdir(path):
@@ -124,14 +190,17 @@ def send_response(stream, content):
     stream.write(response[content[0]] % content[1:])
 
 if __name__ == '__main__':
-    args, nargs = sys.argv[1:], len(sys.argv) - 1
+    B = bookdb.BookDB(database,linklist)
+    args, nargs = sys.argv[1:], len(sys.argv)-1
     host, port = (args + defaults[-2 + nargs:])[0:2]
-    server = server_socket(host, int(port))
+    server = server_socket(host,port)
+   
+        
     print 'starting %s on %s...' % (host, port)
     try:
         while True:
             stream = listen (server)
-            send_response(stream, get_content(get_request(stream)))
+            send_response(stream, get_content(get_request(stream),B))
             stream.close()
     except KeyboardInterrupt:
         print 'shutting down...'

@@ -11,14 +11,29 @@ HTTP/1.0 200 OK
 Content-Type text/html
 
 <html>
+
+<head>
+	<title>My first web page</title>
+</head>
+
 <body>
-Hello, world!
+	<h1>My first web page</h1>
+
+	<h2>What this is</h2>
+	<p>A simple page put together using HTML</p>
+
+	<h2>Why this is</h2>
+	<p style="color:blue"><a href="http://jon-jacky.github.com/uw_python/winter_2012/">To learn HTML</a></p><br>
+	<br>
+	<button type="button">Click Me!</button>
+	
 </body>
+
 </html>
 """
 
-host = ''
-port = 8082 # different default port than thirty_minute_webserver
+host = '140.142.11.6'
+port = 9000 # different default port than thirty_minute_webserver
 
 # optional command line argument: port
 if len(sys.argv) > 1:
@@ -36,7 +51,7 @@ s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 s.bind((host,port))
 
-print 'hello_www listening on port', port
+print 'hello_www server listening on port', port
 s.listen(backlog)
 
 while True: # just keep serving page to any client that connects
